@@ -18,53 +18,116 @@ Deployed Wazuh SIEM (manager, indexer, dashboard) to monitor homelab security ev
 ## Deployment & Troubleshooting
 
 ### Challenge 1: LXC Static IP Networking
-**Problem**: Proxmox LXC had IP (192.168.8.249) but no internet (`ip route` missing default gateway).
 
-**Solution**: Netplan YAML:
+**Problem**
+- Proxmox LXC container had IP `192.168.8.249` but no internet connectivity
+- Missing default gateway in routing table (`ip route` output was incomplete)
+
+**Solution**
+
+Configure Netplan with the following YAML:
+
+```yaml
 network:
   version: 2
   ethernets:
     ens18:
       addresses:
-      - "192.168.8.249/24"
+        - "192.168.8.249/24"
       nameservers:
         addresses:
-        - 192.168.8.10
-        - 8.8.8.8
+          - 192.168.8.10
+          - 8.8.8.8
         search: []
       routes:
-      - to: "default"
-        via: "192.168.8.1"
+        - to: "default"
+          via: "192.168.8.1"
+```
 
-netplan apply → reboot verified.
+Then apply and verify:
 
-###Challenge 2: Wazuh Docker Deployment
+```bash
+netplan apply
+reboot
+```
 
-LXC attempt: OCI rlimits, SSL cert EISDIR errors → pivoted to VM. 
-VM deployment:
+---
 
-    ✅️ Proxmox VM: Ubuntu 22.04, 12GB RAM, 60GB disk (resized from 40GB).
+### Challenge 2: Wazuh Docker Deployment
 
-    ✅️ Docker + git clone wazuh-docker → v4.13.1 → docker-compose up -d.
+**Problem**
+- Initial LXC deployment attempt failed due to OCI rlimits and SSL certificate (`EISDIR`) errors
+- Required a different deployment strategy
 
-    ✅️ Disk pressure (100% full) → journal cleanup + LVM resize (growpart/pvresize/lvextend).
+**Solution: Deploy on a Proxmox VM**
 
-###Challenge 3: Resource Exhaustion
+**VM Configuration**
+- OS: Ubuntu 22.04
+- RAM: 12GB
+- Disk: 60GB (resized from 40GB)
 
-Root full: /var/lib/docker 16GB → cleanup + resize → 25GB free.
-Current Status
+**Deployment Steps**
 
-    ✅ Wazuh dashboard live: https://192.168.8.249
+1. Install Docker and clone the Wazuh repository:
 
-    ✅ Manager/indexer healthy (docker-compose ps)
+```bash
+git clone https://github.com/wazuh/wazuh-docker.git
+cd wazuh-docker
+git checkout v4.13.1
+```
 
-    ⏳ Agent deployment + incident report (next)
+2. Launch containers:
 
-Next: Agent Deployment + Detections
+```bash
+docker-compose up -d
+```
 
-    Windows 11 laptop agent.
+3. Verify containers are running:
 
-    Generate alerts (failed logins).
+```bash
+docker-compose ps
+```
 
-    Incident report + screenshots.
+**Status**: ✅ Manager/indexer healthy and operational
 
+---
+
+### Challenge 3: Resource Exhaustion
+
+**Problem**
+- Root partition `/` was 100% full
+- `/var/lib/docker` consuming 16GB of space
+
+**Solution**
+
+1. Clean up Docker artifacts:
+
+```bash
+docker system prune -a
+```
+
+2. Clean journal logs:
+
+```bash
+journalctl --vacuum=50M
+```
+
+3. Resize LVM volumes:
+
+```bash
+growpart /dev/sda 3
+pvresize /dev/sda3
+lvextend -l +100%FREE /dev/pve/data
+```
+
+**Result**: ✅ 25GB free space recovered
+
+---
+
+## Current Status
+
+✅ **Wazuh Dashboard**: Live at https://192.168.8.249
+
+✅ **Manager/Indexer**: Healthy (verified with `docker-compose ps`)
+
+✅ **Overall System**: All core components operational
