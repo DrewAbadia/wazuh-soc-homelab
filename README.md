@@ -3,17 +3,16 @@
 ## Objective
 Deployed Wazuh SIEM (manager, indexer, dashboard) to monitor homelab security events. Demonstrates container orchestration, troubleshooting, and security monitoring skills.
 
-## Architecture Diagram
-Dell Optiplex 3050 (host)
-├─ Proxmox VMs/LXCs:
-│   ├── Wazuh VM (Ubuntu 22.04, Docker SIEM)
-│   ├── Pi-Hole LXC (DNS filtering)
-│   └── TT-RSS LXC (RSS reader)
-|--Pop_OS! Desktop (Physical)
-|    |
-|    |---Wazuh Agent (endpoint monitoring)
-|--Windows 11 Laptop (Physical)
-     └── Wazuh Agent (endpoint monitoring)
+
+### Component Overview
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| **Wazuh VM** | Virtual Machine | Central SIEM for security monitoring and log analysis |
+| **Pi-Hole LXC** | Container | DNS-level ad and threat filtering |
+| **TT-RSS LXC** | Container | RSS feed aggregation |
+| **Pop_OS! Agent** | Physical Machine | Endpoint threat detection and monitoring |
+| **Windows 11 Agent** | Physical Machine | Endpoint threat detection and monitoring |
      
      
 ## Deployment & Troubleshooting
