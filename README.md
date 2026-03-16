@@ -3,8 +3,7 @@
 ## Objective
 Deployed Wazuh SIEM (manager, indexer, dashboard) to monitor homelab security events. Demonstrates container orchestration, troubleshooting, and security monitoring skills.
 
-    ## Architecture Diagram
-   text
+## Architecture Diagram
 Dell Optiplex 3050 (host)
 ├─ Proxmox VMs/LXCs:
 │   ├── Wazuh VM (Ubuntu 22.04, Docker SIEM)
