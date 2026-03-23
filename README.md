@@ -124,6 +124,26 @@ lvextend -l +100%FREE /dev/pve/data
 
 ---
 
+### Challenge 4: Windows Agent Enrollment (Error 1208)
+
+**Problem**: Agent installed but appearing in Agents dashboard
+
+**Solution**
+
+1. Edited `C:\Program Files (x86)\ossec-agent\ossec.conf`:
+   ```xml
+   <server>
+     <address>192.168.8.249</address>  <!-- Fixed IP -->
+     <port>1515</port>
+   </server>
+   ```
+
+2. net stop wazuh && net start wazuh
+
+**Result**: ✅ Agents table -> green staus
+<img width="908" height="277" alt="{E8955B27-AF1D-44B0-8B96-C364F3F90E91}" src="https://github.com/user-attachments/assets/0321c4b9-d7f9-43fb-8179-986f15bd5059" />
+
+
 ## Current Status
 
 ✅ **Wazuh Dashboard**: Live at https://192.168.8.249
