@@ -126,7 +126,7 @@ lvextend -l +100%FREE /dev/pve/data
 
 ### Challenge 4: Windows Agent Enrollment (Error 1208)
 
-**Problem**: Agent installed but appearing in Agents dashboard
+**Problem**: Agent installed but not appearing in Agents dashboard
 
 **Solution**
 
