@@ -140,7 +140,7 @@ lvextend -l +100%FREE /dev/pve/data
 
 2. net stop wazuh && net start wazuh
 
-**Result**: ✅ Agents table -> green staus
+**Result**: ✅ Agents table -> green status
 <img width="908" height="277" alt="{E8955B27-AF1D-44B0-8B96-C364F3F90E91}" src="https://github.com/user-attachments/assets/0321c4b9-d7f9-43fb-8179-986f15bd5059" />
 
 
