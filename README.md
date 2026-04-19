@@ -143,7 +143,6 @@ lvextend -l +100%FREE /dev/pve/data
 **Result**: ✅ Agents table -> green status
 <img width="908" height="277" alt="{E8955B27-AF1D-44B0-8B96-C364F3F90E91}" src="https://github.com/user-attachments/assets/0321c4b9-d7f9-43fb-8179-986f15bd5059" />
 
-
 ## Current Status
 
 ✅ **Wazuh Dashboard**: Live at https://192.168.8.249
@@ -151,3 +150,14 @@ lvextend -l +100%FREE /dev/pve/data
 ✅ **Manager/Indexer**: Healthy (verified with `docker-compose ps`)
 
 ✅ **Overall System**: All core components operational
+
+---
+
+### Simulation 1: Brute-Force Attempt:
+
+Simulated SSH brute-force attack from an Alpine Linux attacker VM against a Pi-Hole LXC.
+<img width="1446" height="673" alt="{32D306FE-9FA9-4692-9B27-E022F943AA44}" src="https://github.com/user-attachments/assets/eeff1591-a06a-40f7-8780-46bf643a1164" />
+
+
+Repeated failed logins were collected by the Wazuh agent, forwarded to the manager, and confirmed in the dashboard as brute-force alerts.
+<img width="1911" height="452" alt="{97F9EFCE-DD95-4853-A926-4ACBE16C53FC}" src="https://github.com/user-attachments/assets/fcc0a269-cfc2-4ccc-91da-4f2503a2a8d9" />
