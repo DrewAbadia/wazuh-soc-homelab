@@ -161,3 +161,6 @@ Simulated SSH brute-force attack from an Alpine Linux attacker VM against a Pi-H
 
 Repeated failed logins were collected by the Wazuh agent, forwarded to the manager, and confirmed in the dashboard as brute-force alerts.
 <img width="1911" height="452" alt="{97F9EFCE-DD95-4853-A926-4ACBE16C53FC}" src="https://github.com/user-attachments/assets/fcc0a269-cfc2-4ccc-91da-4f2503a2a8d9" />
+
+<img width="960" height="912" alt="{9DF81804-9923-4F05-820A-D4EE32349BA9}" src="https://github.com/user-attachments/assets/62d61532-85b3-4f9a-870b-9e524c57911a" />
+
