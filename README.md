@@ -1,166 +1,175 @@
-# Wazuh SOC Homelab - Proxmox Deployment
+# Wazuh SOC Homelab
+
+## Project Summary
+
+Built and deployed a Wazuh-based SOC homelab in Proxmox to monitor endpoint and infrastructure security events. This project demonstrates SIEM deployment, endpoint onboarding, troubleshooting, log analysis, and alert validation through a simulated brute-force attack.
 
 ## Objective
-Deployed Wazuh SIEM (manager, indexer, dashboard) to monitor homelab security events. Demonstrates container orchestration, troubleshooting, and security monitoring skills.
 
+The goal of this lab was to deploy a functioning Wazuh environment, connect Linux and Windows endpoints, and verify end-to-end alert generation during a realistic attack simulation. I also used the project to strengthen troubleshooting skills in networking, containerization, storage management, and agent enrollment.
 
-### Component Overview
+## Skills Demonstrated
+
+- SIEM deployment and configuration
+- Security monitoring and alert validation
+- Endpoint agent installation and troubleshooting
+- Docker and container-based service deployment
+- Proxmox virtualization and VM/LXC management
+- Linux networking and Netplan configuration
+- Windows agent configuration and service troubleshooting
+- Storage troubleshooting and LVM expansion
+- Attack simulation using Hydra
+- Technical documentation and root-cause analysis
+
+## Environment Overview
+
+### Core Components
 
 | Component | Type | Purpose |
-|-----------|------|---------|
-| **Wazuh VM** | Virtual Machine | Central SIEM for security monitoring and log analysis |
-| **Pi-Hole LXC** | Container | DNS-level ad and threat filtering |
-| **TT-RSS LXC** | Container | RSS feed aggregation |
-| **Pop_OS! Agent** | Physical Machine | Endpoint threat detection and monitoring |
-| **Windows 11 Agent** | Physical Machine | Endpoint threat detection and monitoring |
-     
-     
-## Deployment & Troubleshooting
+|---|---|---|
+| Wazuh VM | Virtual Machine | Central SIEM for security monitoring and log analysis |
+| Pi-hole LXC | Container | DNS-level ad and threat filtering |
+| TT-RSS LXC | Container | RSS feed aggregation |
+| Pop_OS! Agent | Physical Machine | Endpoint monitoring and event forwarding |
+| Windows 11 Agent | Physical Machine | Endpoint monitoring and event forwarding |
+| Alpine Attacker LXC | Container | Used to simulate brute-force activity |
 
-### Challenge 1: LXC Static IP Networking
+## Architecture
 
-**Problem**
-- Proxmox LXC container had IP `192.168.8.249` but no internet connectivity
-- Missing default gateway in routing table (`ip route` output was incomplete)
+```mermaid
+flowchart TD
+    Internet[Internet] --> Beryl[Beryl AX Router<br/>Isolated lab network]
+    Beryl --> Switch[Managed TP-Link Switch]
 
-**Solution**
+    Switch --> PVEHost[Dell OptiPlex 3050<br/>Proxmox VE Host]
+    Switch --> DualBoot[Custom Physical Endpoint Machine<br/>Dual-boot: Windows 11 / Pop_OS!]
 
-Configure Netplan with the following YAML:
+    subgraph PVE [Proxmox Virtual Environment]
+        Wazuh[Wazuh VM<br/>Manager / Indexer / Dashboard]
+        PiHole[Pi-hole LXC<br/>DNS filtering]
+        TTRSS[TT-RSS LXC<br/>RSS aggregation]
+        Alpine[Alpine Attacker<br/>Attack simulation]
+    end
 
-```yaml
-network:
-  version: 2
-  ethernets:
-    ens18:
-      addresses:
-        - "192.168.8.249/24"
-      nameservers:
-        addresses:
-          - 192.168.8.10
-          - 8.8.8.8
-        search: []
-      routes:
-        - to: "default"
-          via: "192.168.8.1"
+    PVEHost --> Wazuh
+    PVEHost --> PiHole
+    PVEHost --> TTRSS
+    PVEHost --> Alpine
+
+    DualBoot --> Win11[Windows 11 Endpoint]
+    DualBoot --> PopOS[Pop_OS! Endpoint]
+
+    Win11 -->|Wazuh agent telemetry| Wazuh
+    PopOS -->|Wazuh agent telemetry| Wazuh
+
+    Alpine -->|Hydra brute-force simulation| Win11
+    Wazuh --> Alerts[Wazuh Dashboard / Alerts]
 ```
 
-Then apply and verify:
+## Deployment Summary
 
-```bash
-netplan apply
-reboot
-```
+### Wazuh Deployment
 
----
+- Deployed Wazuh on an Ubuntu 22.04 Proxmox VM instead of LXC after initial container-related deployment issues.
+- Installed Docker, cloned the Wazuh Docker repository, and launched the Wazuh stack with Docker Compose.
+- Verified that the manager, indexer, and dashboard services were healthy and operational.
 
-### Challenge 2: Wazuh Docker Deployment
+### Key Platform Details
 
-**Problem**
-- Initial LXC deployment attempt failed due to OCI rlimits and SSL certificate (`EISDIR`) errors
-- Required a different deployment strategy
-
-**Solution: Deploy on a Proxmox VM**
-
-**VM Configuration**
 - OS: Ubuntu 22.04
-- RAM: 12GB
-- Disk: 60GB (resized from 40GB)
+- RAM: 10 GB
+- Disk: 60 GB
+- Wazuh version: 4.13.1
 
-**Deployment Steps**
+## Attack Simulation
 
-1. Install Docker and clone the Wazuh repository:
+To validate detection capabilities, I simulated an SSH brute-force attempt from an Alpine Linux LXC VM against a Pi-hole LXC. Repeated failed login attempts were collected by the Wazuh agent, forwarded to the Wazuh manager, and confirmed in the dashboard as brute-force alerts.
 
-```bash
-git clone https://github.com/wazuh/wazuh-docker.git
-cd wazuh-docker
-git checkout v4.13.1
-```
+### Validation Goals
 
-2. Launch containers:
+- Confirm endpoint telemetry was being forwarded correctly
+- Confirm Wazuh ingestion and alerting were working end to end
+- Confirm security events were visible in the dashboard with useful alert details
 
-```bash
-docker-compose up -d
-```
+## Key Challenges and Fixes
 
-3. Verify containers are running:
+| Challenge | Problem | Resolution | Outcome |
+|---|---|---|---|
+| LXC Static IP Networking | Container had an IP address but no internet connectivity due to missing default gateway | Updated Netplan configuration to include the default route and applied the changes | Restored network connectivity |
+| Wazuh LXC Deployment Failure | Initial LXC deployment failed due to OCI rlimits and SSL certificate-related errors | Switched deployment strategy to a dedicated Proxmox VM | Wazuh stack deployed successfully |
+| Resource Exhaustion | Root partition reached 100 percent usage and Docker consumed significant disk space | Pruned Docker artifacts, cleaned journal logs, and expanded LVM storage | Recovered approximately 25 GB of free space |
+| Windows Agent Enrollment | Windows agent installed but did not appear in the Wazuh dashboard | Updated `ossec.conf` with the correct Wazuh manager IP and restarted the service | Agent successfully enrolled and appeared healthy |
 
-```bash
-docker-compose ps
-```
+## Results
 
-**Status**: ✅ Manager/indexer healthy and operational
+### Final State
 
----
+- Wazuh dashboard accessible and operational
+- Wazuh manager and indexer verified healthy
+- Linux and Windows agents successfully connected
+- Brute-force activity detected and visible in the dashboard
+- End-to-end security event monitoring validated
 
-### Challenge 3: Resource Exhaustion
+## Evidence
 
-**Problem**
-- Root partition `/` was 100% full
-- `/var/lib/docker` consuming 16GB of space
+### Suggested Screenshot Order
 
-**Solution**
+1. Architecture or component overview
+2. Wazuh services/containers healthy
+3. Successful Windows or Linux agent enrollment
+4. Hydra brute-force activity in terminal
+5. Wazuh dashboard showing brute-force alerts
+6. Wazuh document details for a specific alert
 
-1. Clean up Docker artifacts:
+## Example Screenshots
 
-```bash
-docker system prune -a
-```
-
-2. Clean journal logs:
-
-```bash
-journalctl --vacuum=50M
-```
-
-3. Resize LVM volumes:
-
-```bash
-growpart /dev/sda 3
-pvresize /dev/sda3
-lvextend -l +100%FREE /dev/pve/data
-```
-
-**Result**: ✅ 25GB free space recovered
-
----
-
-### Challenge 4: Windows Agent Enrollment (Error 1208)
-
-**Problem**: Agent installed but not appearing in Agents dashboard
-
-**Solution**
-
-1. Edited `C:\Program Files (x86)\ossec-agent\ossec.conf`:
-   ```xml
-   <server>
-     <address>192.168.8.249</address>  <!-- Fixed IP -->
-     <port>1515</port>
-   </server>
-   ```
-
-2. net stop wazuh && net start wazuh
-
-**Result**: ✅ Agents table -> green status
-<img width="908" height="277" alt="{E8955B27-AF1D-44B0-8B96-C364F3F90E91}" src="https://github.com/user-attachments/assets/0321c4b9-d7f9-43fb-8179-986f15bd5059" />
-
-## Current Status
-
-✅ **Wazuh Dashboard**: Live at https://192.168.8.249
-
-✅ **Manager/Indexer**: Healthy (verified with `docker-compose ps`)
-
-✅ **Overall System**: All core components operational
-
----
-
-### Simulation 1: Brute-Force Attempt:
-
-Simulated SSH brute-force attack from an Alpine Linux attacker VM against a Pi-Hole LXC.
-<img width="1446" height="673" alt="{32D306FE-9FA9-4692-9B27-E022F943AA44}" src="https://github.com/user-attachments/assets/eeff1591-a06a-40f7-8780-46bf643a1164" />
+### Wazuh Services Healthy
+<img width="1900" height="238" alt="image" src="https://github.com/user-attachments/assets/978c3ae2-aee6-4eed-b6b1-0079ee27efd1" />
 
 
-Repeated failed logins were collected by the Wazuh agent, forwarded to the manager, and confirmed in the dashboard as brute-force alerts.
-<img width="1911" height="452" alt="{97F9EFCE-DD95-4853-A926-4ACBE16C53FC}" src="https://github.com/user-attachments/assets/fcc0a269-cfc2-4ccc-91da-4f2503a2a8d9" />
 
-<img width="960" height="912" alt="{9DF81804-9923-4F05-820A-D4EE32349BA9}" src="https://github.com/user-attachments/assets/62d61532-85b3-4f9a-870b-9e524c57911a" />
 
+
+
+
+
+### Agent Successfully Enrolled
+<img width="975" height="297" alt="image" src="https://github.com/user-attachments/assets/e7e74bf9-4d2e-4903-92a2-8ec5ed415b7c" />
+
+
+### Hydra Brute-Force Simulation
+<img width="1444" height="292" alt="{A17D5F76-E64E-458C-A34E-91D70AE35C73}" src="https://github.com/user-attachments/assets/ee6cf1b9-3d27-4ec1-ab15-12389d6497a9" />
+
+
+
+### Brute-Force Alert in Wazuh Dashboard
+<img width="975" height="231" alt="image" src="https://github.com/user-attachments/assets/7ae4a9f7-c1b4-428c-bfc6-0f81968df6ef" />
+
+
+### Wazuh Alert Detail View
+<img width="975" height="926" alt="image" src="https://github.com/user-attachments/assets/90af7e6f-ca62-4d40-8535-0ab43d075f28" />
+
+
+## Lessons Learned
+
+- A failed deployment path can still add value by showing troubleshooting depth and decision-making.
+- Resource planning matters when deploying security tooling in virtualized environments.
+- Endpoint enrollment issues are often caused by small configuration mismatches, especially IP settings.
+- Simulated attacks are useful for validating whether detection pipelines are working end to end.
+- Clear documentation makes it easier to explain technical work to recruiters, interviewers, and peers.
+
+## Tools and Technologies
+
+- Proxmox
+- Ubuntu 22.04
+- Wazuh
+- Docker
+- Windows 11
+- Pop_OS!
+- Hydra
+- Netplan
+- LVM
+
+## What This Project Proves
+
+This project shows that I can deploy and troubleshoot security monitoring infrastructure, onboard endpoints, simulate malicious behavior, and validate detections in a SIEM environment. It also reflects practical problem-solving across Linux administration, networking, virtualization, and security operations workflows.
