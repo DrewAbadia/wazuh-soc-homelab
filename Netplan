@@ -1,0 +1,27 @@
+# Netplan static IP configuration for Proxmox LXC containers
+#
+# Problem this solves:
+#   LXC containers in Proxmox don't inherit a default gateway automatically.
+#   Without the 'routes' block below, the container will have an IP address
+#   but no internet connectivity (ip route shows no default route).
+#
+# Usage:
+#   Copy to /etc/netplan/00-installer-config.yaml (or your existing netplan file)
+#   Run: netplan apply && reboot
+#
+# Adjust addresses, nameservers, and via to match your network.
+
+network:
+  version: 2
+  ethernets:
+    ens18:
+      addresses:
+        - "192.168.8.249/24"
+      nameservers:
+        addresses:
+          - 192.168.8.10   # Local DNS (Pi-hole in this lab)
+          - 8.8.8.8        # Google DNS fallback
+        search: []
+      routes:
+        - to: "default"
+          via: "192.168.8.1"  # Your router/gateway IP
