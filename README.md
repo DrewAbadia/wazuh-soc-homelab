@@ -41,7 +41,7 @@ The troubleshooting experience was as valuable as the deployment itself — I hi
 
 ### Architecture
 
-```
+```mermaid
 flowchart TD
     Internet[Internet] --> Beryl[Beryl AX Router — Isolated lab network]
     Beryl --> Switch[Managed TP-Link Switch]
